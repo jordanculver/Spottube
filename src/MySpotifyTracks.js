@@ -1,5 +1,3 @@
-// import logo from './logo.svg';
-// import './MySpotifyTracks.css';
 import React, { useState } from 'react';
 import axios from 'axios';
 import dotenv from 'dotenv'
@@ -11,27 +9,44 @@ function MySpotifyTracks() {
         axios.get(`${process.env.REACT_APP_SERVER_URL}/my-tracks`)
             .then(res => {
                 setTracks(res.data.map(track => {
-                    console.log(track)
-                    return <tr key={track.id}>
-                        <td>{track.name}</td>
-                        <td><a href={track.youtubeLink}>Youtube</a></td>
-                    </tr>
+                    return (
+                        <div key={track.id} className="column is-one-quarter">
+                            <div className="card">
+                                <div className="card-content">
+                                    <div className="media">
+                                        <div className="media-left">
+                                            <figure className="image is-64x64">
+                                                <img src={track.image}></img>
+                                            </figure>
+                                        </div>
+                                        <div className="media-content">
+                                            <p className="title is-4">{track.name}</p>
+                                            <p className="subtitle is-6">by {track.artists.join(', ')}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <footer className="card-footer">
+                                    <p className="card-footer-item">
+                                        <span>
+                                            Search <a href={track.youtubeLink}>Youtube</a>
+                                        </span>
+                                    </p>
+                                </footer>
+                            </div>
+                        </div>
+                    )
                 }));
             })
             .catch(err => console.log(err));
     }
     return (
-        <table>
-            <thead>
-                <tr>
-                    <th>Spotify Songs</th>
-                    <th>Youtube Search Links</th>
-                </tr>
-            </thead>
-            <tbody>
-                {tracks}
-            </tbody>
-        </table>
+        <section className="section">
+            <div className="container">
+                <div className="columns is-multiline is-2">
+                    {tracks}
+                </div>
+            </div>
+        </section>
     );
 }
 

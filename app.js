@@ -27,11 +27,13 @@ app.get('/my-tracks', async (req, res) => {
         .map(track => {
             const artists = track.artists.map(a => a.name);
             const youtubeLink = encodeURI(`https://www.youtube.com/results?search_query=${artists.join(' ')} ${track.name}`);
+            const image = track.album.images.filter(image => image.height === 64)[0].url;
             return {
                 name: track.name,
                 id: track.id,
                 artists: artists,
-                youtubeLink: youtubeLink
+                youtubeLink: youtubeLink,
+                image: image
             }
         });
     res.status(200).send(tracks);

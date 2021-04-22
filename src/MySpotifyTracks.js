@@ -13,7 +13,6 @@ function MySpotifyTracks() {
         axios.get(`${process.env.REACT_APP_SERVER_URL}/my-tracks/${data.selectedPage}`)
             .then(res => {
                 const pages = [];
-                console.log(data.selectedPage)
                 for (var i = 0; i < res.data.totalPages; i++) {
                     pages.push(
                         <li key={i}>
@@ -52,8 +51,20 @@ function MySpotifyTracks() {
                 setData({ tracks: tracks, pages: pages, selectedPage: data.selectedPage });
             }).catch(err => console.log(err));
     }
+    const pagination = (
+        <section className="section">
+            <div className="container">
+                <nav className="pagination is-centered" role="navigation">
+                    <ul className="pagination-list">
+                        {data.pages}
+                    </ul>
+                </nav>
+            </div>
+        </section>
+    );
     return (
         <div>
+            {pagination}
             <section className="section">
                 <div className="container">
                     <div className="columns is-multiline is-5">
@@ -61,17 +72,7 @@ function MySpotifyTracks() {
                     </div>
                 </div>
             </section>
-            <section className="section">
-                <div className="container">
-                    <nav className="pagination is-centered" role="navigation">
-                        <a className="pagination-next">Next page</a>
-                        <ul className="pagination-list">
-                            {data.pages}
-                        </ul>
-                        <a className="pagination-previous">Previous</a>
-                    </nav>
-                </div>
-            </section>
+            {pagination}
         </div>
     );
 }

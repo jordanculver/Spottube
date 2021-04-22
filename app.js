@@ -44,22 +44,25 @@ const getAccessToken = async () => {
         return fs.readFileSync(`tmp/access_token`, { encoding: 'utf-8' });
     } catch (err) {
         console.error(err);
-        return await refreshSpotifyToken();
+        // return await refreshSpotifyToken();
+        return null;
     }
 }
 
 const getMySpotifyTracks = async (params) => {
     try {
+        const accessToken = await getAccessToken();
+        const token = accessToken === null ? await refreshSpotifyToken() : accessToken;
         return await axios.get(`${process.env.SPOTIFY_API_URL}/me/tracks`, {
             headers: {
-                authorization: `Bearer ${await getAccessToken()}`
+                authorization: `Bearer ${token}`
             },
             params: params
         });
     } catch (err) {
         try {
             fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
-            return await getMySpotifyTracks(params);
+        return await getMySpotifyTracks(params);
         } catch (removeErr) {
             console.error(removeErr);
         }

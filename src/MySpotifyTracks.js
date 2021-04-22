@@ -4,13 +4,26 @@ import dotenv from 'dotenv'
 dotenv.config();
 
 function MySpotifyTracks() {
-    const [tracks, setTracks] = useState([]);
-    if (tracks.length === 0) {
-        axios.get(`${process.env.REACT_APP_SERVER_URL}/my-tracks`)
+    const [data, setData] = useState({ tracks: [], pages: [], selectedPage: 0 });
+    function handlePageSelection(e) {
+        e.preventDefault();
+        setData({ tracks: [], pages: [], selectedPage: parseInt(e.currentTarget.getAttribute('data-index')) });
+    }
+    if (data.tracks.length === 0) {
+        axios.get(`${process.env.REACT_APP_SERVER_URL}/my-tracks/${data.selectedPage}`)
             .then(res => {
-                setTracks(res.data.map(track => {
+                const pages = [];
+                console.log(data.selectedPage)
+                for (var i = 0; i < res.data.totalPages; i++) {
+                    pages.push(
+                        <li key={i}>
+                            <a onClick={handlePageSelection} data-index={i} className={`pagination-link ${i === data.selectedPage ? 'is-current has-background-success' : ''}`}>{i + 1}</a>
+                        </li>
+                    );
+                }
+                const tracks = res.data.tracks.map(track => {
                     return (
-                        <div key={track.id} className="column is-one-quarter">
+                        <div key={track.id} className="column is-half-tablet">
                             <div className="card">
                                 <div className="card-content">
                                     <div className="media">
@@ -35,18 +48,31 @@ function MySpotifyTracks() {
                             </div>
                         </div>
                     )
-                }));
-            })
-            .catch(err => console.log(err));
+                });
+                setData({ tracks: tracks, pages: pages, selectedPage: data.selectedPage });
+            }).catch(err => console.log(err));
     }
     return (
-        <section className="section">
-            <div className="container">
-                <div className="columns is-multiline is-2">
-                    {tracks}
+        <div>
+            <section className="section">
+                <div className="container">
+                    <div className="columns is-multiline is-5">
+                        {data.tracks}
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
+            <section className="section">
+                <div className="container">
+                    <nav className="pagination is-centered" role="navigation">
+                        <a className="pagination-next">Next page</a>
+                        <ul className="pagination-list">
+                            {data.pages}
+                        </ul>
+                        <a className="pagination-previous">Previous</a>
+                    </nav>
+                </div>
+            </section>
+        </div>
     );
 }
 

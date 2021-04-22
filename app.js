@@ -48,17 +48,18 @@ const getAccessToken = async () => {
     }
 }
 
-const getMySpotifyTracks = async () => {
+const getMySpotifyTracks = async (params) => {
     try {
         return await axios.get(`${process.env.SPOTIFY_API_URL}/me/tracks`, {
             headers: {
                 authorization: `Bearer ${await getAccessToken()}`
-            }
+            },
+            params: params
         });
     } catch (err) {
         try {
             fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
-            return await getMySpotifyTracks();
+            return await getMySpotifyTracks(params);
         } catch (removeErr) {
             console.error(removeErr);
         }
@@ -67,7 +68,8 @@ const getMySpotifyTracks = async () => {
 }
 
 app.get('/my-tracks', async (req, res) => {
-    const spotifyTracks = await getMySpotifyTracks();
+    const spotifyTracks = await getMySpotifyTracks({ limit: 50 });
+    const totalPages = Math.ceil(spotifyTracks.data.total / spotifyTracks.data.limit);
     const tracks = spotifyTracks.data.items
         .flatMap(item => item.track)
         .map(track => {
@@ -82,7 +84,29 @@ app.get('/my-tracks', async (req, res) => {
                 image: image
             }
         });
-    res.status(200).send(tracks);
+    res.status(200).send({ totalPages, tracks });
+});
+
+app.get('/my-tracks/:pageNumber', async (req, res) => {
+    const spotifyTracks = await getMySpotifyTracks({ offset: req.params.pageNumber * 50, limit: 50 });
+    if (!spotifyTracks) return res.status(200).send({ totalPages: 0, tracks: [] });
+    const totalPages = Math.ceil(spotifyTracks.data.total / 50);
+    const tracks = spotifyTracks.data.items
+        .flatMap(item => item.track)
+        .filter(track => track)
+        .map(track => {
+            const artists = track.artists.map(a => a.name);
+            const youtubeLink = encodeURI(`https://www.youtube.com/results?search_query=${artists.join(' ')} ${track.name}`);
+            const image = track.album.images.filter(image => image.height === 64)[0].url;
+            return {
+                name: track.name,
+                id: track.id,
+                artists: artists,
+                youtubeLink: youtubeLink,
+                image: image
+            }
+        });
+    res.status(200).send({ totalPages, tracks });
 });
 
 app.listen(port, () => {

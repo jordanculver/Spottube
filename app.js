@@ -2,9 +2,10 @@ const express = require('express');
 const app = express();
 const port = 4732;
 const path = require('path');
-const axios = require('axios');
+const axios = require('axios').default;
 const cors = require('cors');
 require('dotenv').config();
+const fs = require('fs');
 
 app.use(cors());
 app.use('/static', express.static('build'));
@@ -16,12 +17,57 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname + '/build/index.html'));
 });
 
-app.get('/my-tracks', async (req, res) => {
-    const spotifyTracks = await axios.get(`${process.env.SPOTIFY_API_URL}/me/tracks`, {
+const refreshSpotifyToken = async () => {
+    const params = new URLSearchParams();
+    params.append('grant_type', 'refresh_token');
+    params.append('refresh_token', process.env.SPOTIFY_REFRESH_TOKEN);
+    const config = {
         headers: {
-            authorization: `Bearer ${process.env.SPOTIFY_ACCESS_TOKEN}`
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        auth: {
+            username: process.env.SPOTIFY_CLIENT_ID,
+            password: process.env.SPOTIFY_CLIENT_SECRET
         }
-    });
+    };
+    const res = await axios.post(`${process.env.SPOTIFY_ACCOUNT_URL}/api/token`, params, config);
+    try {
+        fs.writeFileSync(`tmp/access_token`, res.data.access_token);
+    } catch (err) {
+        console.error(err);
+    }
+    return res.data.access_token;
+}
+
+const getAccessToken = async () => {
+    try {
+        return fs.readFileSync(`tmp/access_token`, { encoding: 'utf-8' });
+    } catch (err) {
+        console.error(err);
+        return await refreshSpotifyToken();
+    }
+}
+
+const getMySpotifyTracks = async () => {
+    try {
+        return await axios.get(`${process.env.SPOTIFY_API_URL}/me/tracks`, {
+            headers: {
+                authorization: `Bearer ${await getAccessToken()}`
+            }
+        });
+    } catch (err) {
+        try {
+            fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
+            return await getMySpotifyTracks();
+        } catch (removeErr) {
+            console.error(removeErr);
+        }
+        console.error(err);
+    }
+}
+
+app.get('/my-tracks', async (req, res) => {
+    const spotifyTracks = await getMySpotifyTracks();
     const tracks = spotifyTracks.data.items
         .flatMap(item => item.track)
         .map(track => {

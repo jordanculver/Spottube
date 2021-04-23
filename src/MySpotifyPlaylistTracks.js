@@ -25,6 +25,7 @@ function MySpotifyPlaylistTracks(props) {
                     );
                 }
                 const tracks = res.data.tracks.map(track => {
+                    const youtubeDirectUrl = encodeURI(`${process.env.REACT_APP_SERVER_URL}/youtube-track?search_query=${track.artists.join(' ')} ${track.name}`);
                     return (
                         <div key={track.id} className="column is-half-tablet">
                             <div className="card">
@@ -42,6 +43,11 @@ function MySpotifyPlaylistTracks(props) {
                                     </div>
                                 </div>
                                 <footer className="card-footer">
+                                    <p className="card-footer-item">
+                                        <span>
+                                            Go to <a href={youtubeDirectUrl}>Youtube</a>
+                                        </span>
+                                    </p>
                                     <p className="card-footer-item">
                                         <span>
                                             Search <a href={track.youtubeLink}>Youtube</a>

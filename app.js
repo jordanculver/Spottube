@@ -44,7 +44,6 @@ const getAccessToken = async () => {
         return fs.readFileSync(`tmp/access_token`, { encoding: 'utf-8' });
     } catch (err) {
         console.error(err);
-        // return await refreshSpotifyToken();
         return null;
     }
 }
@@ -154,6 +153,19 @@ const getMySpotifyTracksFromAlbums = async (albumId, params) => {
         console.error(err);
     }
 }
+
+app.get('/youtube-track', async (req, res) => {
+    const result = await axios.get(`${process.env.YOUTUBE_API_URL}/search`, {
+        params: {
+            key: process.env.YOUTUBE_API_KEY,
+            q: req.query.search_query,
+            limit: 5
+        }
+    });
+    if (!result) return res.redirect(`https://www.youtube.com/results?search_query=${req.query.search_query}`);
+    const youtubeId = result.data.items[0].id.videoId;
+    res.redirect(301, `https://www.youtube.com/watch?v=${youtubeId}`);
+});
 
 app.get('/my-tracks', async (req, res) => {
     const spotifyTracks = await getMySpotifyTracks({ limit: 50 });

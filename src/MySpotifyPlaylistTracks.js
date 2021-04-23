@@ -3,14 +3,18 @@ import axios from 'axios';
 import dotenv from 'dotenv'
 dotenv.config();
 
-function MySpotifyTracks() {
+function MySpotifyPlaylistTracks(props) {
     const [data, setData] = useState({ tracks: [], pages: [], selectedPage: 0 });
     function handlePageSelection(e) {
         e.preventDefault();
         setData({ tracks: [], pages: [], selectedPage: parseInt(e.currentTarget.getAttribute('data-index')) });
     }
+    function goBackToPlaylists(e) {
+        e.preventDefault();
+        props.onBackToPlaylists();
+    }
     if (data.tracks.length === 0) {
-        axios.get(`${process.env.REACT_APP_SERVER_URL}/my-tracks/${data.selectedPage}`)
+        axios.get(`${process.env.REACT_APP_SERVER_URL}/my-playlists/${props.playlistId}/tracks/${data.selectedPage}`)
             .then(res => {
                 const pages = [];
                 for (var i = 0; i < res.data.totalPages; i++) {
@@ -53,18 +57,40 @@ function MySpotifyTracks() {
     }
     const pagination = (
         <section className="section">
-                <div className="container">
-                    <nav className="pagination is-centered" role="navigation">
-                        <ul className="pagination-list">
-                            {data.pages}
-                        </ul>
-                    </nav>
-                </div>
-            </section>
+            <div className="container">
+                <nav className="pagination is-centered" role="navigation">
+                    <ul className="pagination-list">
+                        {data.pages}
+                    </ul>
+                </nav>
+            </div>
+        </section>
     );
     return (
         <div>
-            {pagination}
+            {data.pages.length > 1 ? pagination : <></>}
+            <div className="columns is-full">
+                <div className="column">
+                    <div className="card">
+                        <div className="card-content">
+                            <div className="media">
+                                <div className="media-left">
+                                    <figure className="image is-128x128">
+                                        <img src={props.playlistImage}></img>
+                                    </figure>
+                                </div>
+                                <div className="media-content">
+                                    <h1 className="title">{props.playlistTitle}</h1>
+                                    <p className="subtitle">
+                                        <a onClick={goBackToPlaylists}>Back to playlists</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <section className="section">
                 <div className="container">
                     <div className="columns is-multiline is-5">
@@ -72,9 +98,9 @@ function MySpotifyTracks() {
                     </div>
                 </div>
             </section>
-            {pagination}
+            {data.pages.length > 1 ? pagination : <></>}
         </div>
     );
 }
 
-export default MySpotifyTracks;
+export default MySpotifyPlaylistTracks;

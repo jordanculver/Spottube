@@ -3,14 +3,14 @@ import axios from 'axios';
 import dotenv from 'dotenv'
 dotenv.config();
 
-function MySpotifyTracks() {
+function MySpotifyAlbums() {
     const [data, setData] = useState({ tracks: [], pages: [], selectedPage: 0 });
     function handlePageSelection(e) {
         e.preventDefault();
         setData({ tracks: [], pages: [], selectedPage: parseInt(e.currentTarget.getAttribute('data-index')) });
     }
     if (data.tracks.length === 0) {
-        axios.get(`${process.env.REACT_APP_SERVER_URL}/my-tracks/${data.selectedPage}`)
+        axios.get(`${process.env.REACT_APP_SERVER_URL}/my-albums/${data.selectedPage}`)
             .then(res => {
                 const pages = [];
                 for (var i = 0; i < res.data.totalPages; i++) {
@@ -53,14 +53,14 @@ function MySpotifyTracks() {
     }
     const pagination = (
         <section className="section">
-                <div className="container">
-                    <nav className="pagination is-centered" role="navigation">
-                        <ul className="pagination-list">
-                            {data.pages}
-                        </ul>
-                    </nav>
-                </div>
-            </section>
+            <div className="container">
+                <nav className="pagination is-centered" role="navigation">
+                    <ul className="pagination-list">
+                        {data.pages}
+                    </ul>
+                </nav>
+            </div>
+        </section>
     );
     return (
         <div>
@@ -77,4 +77,4 @@ function MySpotifyTracks() {
     );
 }
 
-export default MySpotifyTracks;
+export default MySpotifyAlbums;

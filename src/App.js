@@ -26,21 +26,21 @@ function App() {
       <div className="tabs is-centered is-large">
         <ul>
           <li className={tab === tabs.TRACKS ? 'is-active' : ''}>
-            <a onClick={(e) => { e.preventDefault(); setTab(tabs.TRACKS)}}>My Tracks</a>
+            <a onClick={(e) => { e.preventDefault(); setTab(tabs.TRACKS) }}>My Tracks</a>
           </li>
           <li className={tab === tabs.PLAYLISTS ? 'is-active' : ''}>
-            <a onClick={(e) => { e.preventDefault(); setTab(tabs.PLAYLISTS)}}>My Playlists</a>
+            <a onClick={(e) => { e.preventDefault(); setTab(tabs.PLAYLISTS) }}>My Playlists</a>
           </li>
           <li className={tab === tabs.ALBUMS ? 'is-active' : ''}>
-            <a onClick={(e) => { e.preventDefault(); setTab(tabs.ALBUMS)}}>My Albums</a>
+            <a onClick={(e) => { e.preventDefault(); setTab(tabs.ALBUMS) }}>My Albums</a>
           </li>
         </ul>
       </div>
       <section className="section">
         <div className="container">
-          { tab === tabs.TRACKS ? <MySpotifyTracks></MySpotifyTracks> : <></>}
-          { tab === tabs.PLAYLISTS ? <MySpotifyPlaylists></MySpotifyPlaylists> : <></>}
-          {/* { tab === tabs.ALBUMS ? <MySpotifyAlbums></MySpotifyAlbums> : <></>} */}
+          {tab === tabs.TRACKS ? <MySpotifyTracks></MySpotifyTracks> : <></>}
+          {tab === tabs.PLAYLISTS ? <MySpotifyPlaylists></MySpotifyPlaylists> : <></>}
+          {tab === tabs.ALBUMS ? <MySpotifyAlbums></MySpotifyAlbums> : <></>}
         </div>
       </section>
     </div>

@@ -144,16 +144,14 @@ const getMySpotifyTracksFromAlbums = async (albumId, params) => {
             params: params
         });
     } catch (err) {
-        console.log(err);
-        return null;
-        // try {
-        //     if (err.indexOf("open 'tmp/access_token'") > -1) return null;
-        //     fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
-        //     return await getMySpotifyTracksFromAlbums(albumId, params);
-        // } catch (removeErr) {
-        //     console.error(removeErr);
-        // }
-        // console.error(err);
+        try {
+            if (err.indexOf("open 'tmp/access_token'") > -1) return null;
+            fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
+            return await getMySpotifyTracksFromAlbums(albumId, params);
+        } catch (removeErr) {
+            console.error(removeErr);
+        }
+        console.error(err);
     }
 }
 

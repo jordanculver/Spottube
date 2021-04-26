@@ -3,12 +3,14 @@ import logo from './spottube.svg';
 import MySpotifyTracks from './MySpotifyTracks';
 import MySpotifyPlaylists from './MySpotifyPlaylists';
 import MySpotifyAlbums from './MySpotifyAlbums';
+import SearchSpotifyTracks from './SearchSpotifyTracks';
 
 function App() {
   const tabs = {
     TRACKS: 'my_tracks',
     PLAYLISTS: 'my_playlists',
-    ALBUMS: 'my_albums'
+    ALBUMS: 'my_albums',
+    SEARCH: 'search'
   }
   const [tab, setTab] = useState(tabs.TRACKS);
   return (
@@ -34,6 +36,9 @@ function App() {
           <li className={tab === tabs.ALBUMS ? 'is-active' : ''}>
             <a onClick={(e) => { e.preventDefault(); setTab(tabs.ALBUMS) }}>My Albums</a>
           </li>
+          <li className={tab === tabs.SEARCH ? 'is-active' : ''}>
+            <a onClick={(e) => { e.preventDefault(); setTab(tabs.SEARCH) }}>Search</a>
+          </li>
         </ul>
       </div>
       <section className="section">
@@ -41,6 +46,7 @@ function App() {
           {tab === tabs.TRACKS ? <MySpotifyTracks></MySpotifyTracks> : <></>}
           {tab === tabs.PLAYLISTS ? <MySpotifyPlaylists></MySpotifyPlaylists> : <></>}
           {tab === tabs.ALBUMS ? <MySpotifyAlbums></MySpotifyAlbums> : <></>}
+          {tab === tabs.SEARCH ? <SearchSpotifyTracks></SearchSpotifyTracks> : <></>}
         </div>
       </section>
     </div>

@@ -154,6 +154,31 @@ const getMySpotifyTracksFromAlbums = async (albumId, params) => {
     }
 }
 
+const searchSpotifyTracks = async (query, limit, offset) => {
+    try {
+        const accessToken = await getAccessToken();
+        const token = accessToken === null ? await refreshSpotifyToken() : accessToken;
+        return await axios.get(`${process.env.SPOTIFY_API_URL}/search`, {
+            headers: {
+                authorization: `Bearer ${token}`
+            },
+            params: {
+                limit: limit,
+                offset: offset,
+                q: query,
+                type: 'track'
+            }
+        });
+    } catch (err) {
+        if (err.response.status === 401) {
+            fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
+            return await searchSpotifyTracks(query, limit, offset);
+        }
+        console.error(err);
+        return null;
+    }
+}
+
 app.get('/youtube-track', async (req, res) => {
     const result = await axios.get(`${process.env.YOUTUBE_API_URL}/search`, {
         params: {
@@ -301,6 +326,30 @@ app.get('/my-albums/:albumId/tracks', async (req, res) => {
             }
         });
     res.status(200).send({ totalPages, image, tracks });
+});
+
+app.get('/search/:pageNumber', async (req, res) => {
+    const spotifyTracks = await searchSpotifyTracks(
+        req.query.search_query,
+        50,
+        req.params.pageNumber * 50
+    );
+    if (!spotifyTracks) return res.status(200).send({ totalPages: 0, tracks: [] });
+    const totalPages = Math.ceil(spotifyTracks.data.tracks.total / 50);
+    const tracks = spotifyTracks.data.tracks.items
+        .map(track => {
+            const artists = track.artists.map(a => a.name);
+            const youtubeLink = encodeURI(`https://www.youtube.com/results?search_query=${artists.join(' ')} ${track.name}`);
+            const image = track.album.images.filter(image => image.height === 64)[0].url;
+            return {
+                name: track.name,
+                id: track.id,
+                artists: artists,
+                youtubeLink: youtubeLink,
+                image: image
+            }
+        });
+    res.status(200).send({ totalPages, tracks });
 });
 
 app.listen(port, () => {

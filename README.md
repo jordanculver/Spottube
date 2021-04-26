@@ -1,4 +1,4 @@
-# <img src="src/spottube.svg" alt="Spottube image" width="50" style="margin-bottom:-15px;"/> Spottube
+# <img src="src/spottube.svg" alt="Spottube image" width="50" align="left"/> Spottube
 
 A simple web app that allows searching of Spotify tracks/albums and provides equivalent Youtube video links or valid Youtube search queries.
 

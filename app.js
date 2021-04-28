@@ -179,6 +179,29 @@ const searchSpotifyTracks = async (query, limit, offset) => {
     }
 }
 
+const getPlaylist = async (id) => {
+    try {
+        const accessToken = await getAccessToken();
+        const token = accessToken === null ? await refreshSpotifyToken() : accessToken;
+        return await axios.get(`${process.env.SPOTIFY_API_URL}/playlists/${id}`, {
+            headers: {
+                authorization: `Bearer ${token}`
+            },
+            params: {
+                fields: 'name,description,tracks.items(track(name,artists(name)))'
+            }
+        });
+    } catch (err) {
+        try {
+            fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
+            return await getPlaylist(id);
+        } catch (removeErr) {
+            console.error(removeErr);
+        }
+        console.error(err);
+    }
+}
+
 app.get('/youtube-track', async (req, res) => {
     const result = await axios.get(`${process.env.YOUTUBE_API_URL}/search`, {
         params: {
@@ -190,6 +213,68 @@ app.get('/youtube-track', async (req, res) => {
     if (!result) return res.redirect(`https://www.youtube.com/results?search_query=${req.query.search_query}`);
     const youtubeId = result.data.items[0].id.videoId;
     res.redirect(301, `https://www.youtube.com/watch?v=${youtubeId}`);
+});
+
+app.get('/youtube-auth', async (req, res) => {
+    console.log(req.query.code);
+    res.redirect(301, '/');
+});
+
+app.get('/youtube-export/:playlistId', async (req, res) => {
+    const spotifyPlaylist = await getPlaylist(req.params.playlistId);
+    let youtubePlaylist;
+    try {
+        youtubePlaylist = await axios.post(`${process.env.YOUTUBE_API_URL}/playlists`,
+            {
+                snippet: {
+                    title: spotifyPlaylist.data.name,
+                    description: spotifyPlaylist.data.description
+                }
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.YOUTUBE_AUTH_TOKEN}`
+                },
+                params: {
+                    key: process.env.YOUTUBE_API_KEY,
+                    part: 'snippet'
+                }
+            }
+        );
+    } catch (err) {
+        console.err(err);
+    }
+    for (var i = 0; i < spotifyPlaylist.data.tracks.items.length; i++) {
+        const track = spotifyPlaylist.data.tracks.items[i].track;
+        const videos = await axios.get(`${process.env.YOUTUBE_API_URL}/search`, {
+            params: {
+                key: process.env.YOUTUBE_API_KEY,
+                q: `${track.artists.map(a => a.name).join(' ')} ${track.name}`,
+                limit: 5
+            }
+        });
+        await axios.post(`${process.env.YOUTUBE_API_URL}/playlistItems`,
+            {
+                snippet: {
+                    playlistId: youtubePlaylist.data.id,
+                    resourceId: {
+                        kind: 'youtube#video',
+                        videoId: videos.data.items[0].id.videoId
+                    }
+                }
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.YOUTUBE_AUTH_TOKEN}`
+                },
+                params: {
+                    key: process.env.YOUTUBE_API_KEY,
+                    part: 'snippet'
+                }
+            }
+        );
+    }
+    res.redirect(302, `https://youtube.com/playlist?list=${youtubePlaylist.data.id}`);
 });
 
 app.get('/my-tracks', async (req, res) => {
@@ -249,7 +334,8 @@ app.get('/my-playlists/:pageNumber', async (req, res) => {
         })
         .filter(item => item.tracks && item.images)
         .map(item => {
-            const image = item.images.filter(image => image.height === 640)[0].url;
+            const largestImages = item.images.filter(image => image.height === 640);
+            const image = largestImages.length > 0 ? largestImages[0].url : item.images.sort((a, b) => a - b)[0];
             return {
                 id: item.id,
                 name: item.name,
@@ -353,5 +439,5 @@ app.get('/search/:pageNumber', async (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`SpotTube listening at http://localhost:${port}`);
+    console.log(`Spottube listening at http://localhost:${port}`);
 });

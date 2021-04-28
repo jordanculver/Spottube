@@ -34,6 +34,7 @@ function MySpotifyPlaylists() {
                     );
                 }
                 const playlists = res.data.playlists.map(playlist => {
+                    const youtubeExportUrl = encodeURI(`${process.env.REACT_APP_SERVER_URL}/youtube-export/${playlist.id}`);
                     return (
                         <div key={playlist.id} className="column is-half-tablet">
                             <div className="card">
@@ -58,6 +59,11 @@ function MySpotifyPlaylists() {
                                                 data-image={playlist.image}
                                                 href="#"
                                                 onClick={loadPlaylist}>Playlist</a>
+                                        </span>
+                                    </p>
+                                    <p className="card-footer-item">
+                                        <span>
+                                            Export as a <a href={youtubeExportUrl}>Youtube Playlist</a>
                                         </span>
                                     </p>
                                 </footer>

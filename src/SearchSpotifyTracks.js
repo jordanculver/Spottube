@@ -4,15 +4,16 @@ import dotenv from 'dotenv'
 dotenv.config();
 
 function SearchSpotifyTracks() {
-    const [data, setData] = useState({ tracks: [], pages: [], selectedPage: 0 });
+    const [data, setData] = useState({ tracks: [], pages: [] });
     const [query, setQuery] = useState('');
     function handlePageSelection(e) {
         e.preventDefault();
-        setData({ tracks: [], pages: [], selectedPage: parseInt(e.currentTarget.getAttribute('data-index')) });
+        performSearch(e, parseInt(e.currentTarget.getAttribute('data-index')));
     }
-    function performSearch(e) {
+    function performSearch(event, page) {
+        const selectedPage = page || 0;
         if (query.length > 0) {
-            axios.get(`${process.env.REACT_APP_SERVER_URL}/search/${data.selectedPage}`, {
+            axios.get(`${process.env.REACT_APP_SERVER_URL}/search/${selectedPage}`, {
                 params: {
                     search_query: query
                 }
@@ -21,7 +22,7 @@ function SearchSpotifyTracks() {
                 for (var i = 0; i < res.data.totalPages; i++) {
                     pages.push(
                         <li key={i}>
-                            <a onClick={handlePageSelection} data-index={i} className={`pagination-link ${i === data.selectedPage ? 'is-current has-background-success' : ''}`}>{i + 1}</a>
+                            <a onClick={handlePageSelection} data-index={i} className={`pagination-link ${i === selectedPage ? 'is-current has-background-success' : ''}`}>{i + 1}</a>
                         </li>
                     );
                 }
@@ -59,7 +60,7 @@ function SearchSpotifyTracks() {
                         </div>
                     )
                 });
-                setData({ tracks: searchResults, pages: pages, selectedPage: data.selectedPage });
+                setData({ tracks: searchResults, pages: pages });
             }).catch(err => console.log(err));
         }
     }
@@ -79,7 +80,6 @@ function SearchSpotifyTracks() {
     );
     return (
         <div>
-            {data.pages.length > 1 ? pagination : <></>}
             <section className="section">
                 <div className="container">
                     <div className="columns is-multiline is-5">
@@ -94,6 +94,7 @@ function SearchSpotifyTracks() {
                                     </button>
                                 </div>
                             </div>
+                            {data.pages.length > 1 ? pagination : <></>}
                         </div>
                         {data.tracks}
                     </div>

@@ -403,7 +403,8 @@ app.get('/search/:pageNumber', async (req, res) => {
         50,
         req.params.pageNumber * 50
     );
-    const totalPages = Math.ceil(spotifyTracks.data.tracks.total / 50);
+    const pageCount = Math.ceil(spotifyTracks.data.tracks.total / 50);
+    const totalPages = pageCount > 10 ? 10 : pageCount;
     const tracks = spotifyTracks.data.tracks.items
         .map(track => {
             const artists = track.artists.map(a => a.name);

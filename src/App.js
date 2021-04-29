@@ -21,7 +21,7 @@ function App() {
             <img className="navbar-item" width="112" height="28" src={logo}></img>
           </a>
           <div className="navbar-item">
-            <h1 className="title">SpotTube - Find your Spotify songs on Youtube!</h1>
+            <h1 className="title">Spottube - Find your Spotify songs on Youtube!</h1>
           </div>
         </div>
       </nav>

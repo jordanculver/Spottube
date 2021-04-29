@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname + '/build/index.html'));
 });
 
-const refreshSpotifyToken = async () => {
+const getSpotifyAccessToken = async () => {
     const params = new URLSearchParams();
     params.append('grant_type', 'refresh_token');
     params.append('refresh_token', process.env.SPOTIFY_REFRESH_TOKEN);
@@ -31,136 +31,121 @@ const refreshSpotifyToken = async () => {
         }
     };
     const res = await axios.post(`${process.env.SPOTIFY_ACCOUNT_URL}/api/token`, params, config);
-    try {
-        fs.writeFileSync(`tmp/access_token`, res.data.access_token);
-    } catch (err) {
-        console.error(err);
-    }
     return res.data.access_token;
 }
 
-const getAccessToken = async () => {
-    try {
-        return fs.readFileSync(`tmp/access_token`, { encoding: 'utf-8' });
-    } catch (err) {
-        console.error(err);
-        return null;
-    }
+const getYoutubeAccessToken = async () => {
+    const res = await axios.post(process.env.GOOGLE_AUTH_URL, null, {
+        params: {
+            client_id: process.env.GOOGLE_CLIENT_ID,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET,
+            grant_type: 'refresh_token',
+            refresh_token: process.env.YOUTUBE_REFRESH_TOKEN
+        }
+    });
+    return res.data.access_token;
 }
 
 const getMySpotifyTracks = async (params) => {
     try {
-        const accessToken = await getAccessToken();
-        const token = accessToken === null ? await refreshSpotifyToken() : accessToken;
         return await axios.get(`${process.env.SPOTIFY_API_URL}/me/tracks`, {
             headers: {
-                authorization: `Bearer ${token}`
+                authorization: `Bearer ${await getSpotifyAccessToken()}`
             },
             params: params
         });
     } catch (err) {
-        try {
-            fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
-            return await getMySpotifyTracks(params);
-        } catch (removeErr) {
-            console.error(removeErr);
-        }
         console.error(err);
+        return {
+            data: { total: 0, limit: params.limit, items: [] }
+        }
     }
 }
 
 const getMySpotifyPlaylists = async (params) => {
     try {
-        const accessToken = await getAccessToken();
-        const token = accessToken === null ? await refreshSpotifyToken() : accessToken;
         return await axios.get(`${process.env.SPOTIFY_API_URL}/me/playlists`, {
             headers: {
-                authorization: `Bearer ${token}`
+                authorization: `Bearer ${await getSpotifyAccessToken()}`
             },
             params: params
         });
     } catch (err) {
-        try {
-            fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
-            return await getMySpotifyPlaylists(params);
-        } catch (removeErr) {
-            console.error(removeErr);
-        }
         console.error(err);
+        return {
+            data: {
+                total: 0,
+                items: []
+            }
+        }
     }
 }
 
 const getMySpotifyTracksFromPlaylists = async (playlistId, params) => {
     try {
-        const accessToken = await getAccessToken();
-        const token = accessToken === null ? await refreshSpotifyToken() : accessToken;
         return await axios.get(`${process.env.SPOTIFY_API_URL}/playlists/${playlistId}/tracks`, {
             headers: {
-                authorization: `Bearer ${token}`
+                authorization: `Bearer ${await getSpotifyAccessToken()}`
             },
             params: params
         });
     } catch (err) {
-        try {
-            fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
-            return await getMySpotifyTracksFromPlaylists(playlistId, params);
-        } catch (removeErr) {
-            console.error(removeErr);
-        }
         console.error(err);
+        return {
+            data: {
+                total: 0,
+                items: []
+            }
+        }
     }
 }
 
 const getMySpotifyAlbums = async (params) => {
     try {
-        const accessToken = await getAccessToken();
-        const token = accessToken === null ? await refreshSpotifyToken() : accessToken;
         return await axios.get(`${process.env.SPOTIFY_API_URL}/me/albums`, {
             headers: {
-                authorization: `Bearer ${token}`
+                authorization: `Bearer ${await getSpotifyAccessToken()}`
             },
             params: params
         });
     } catch (err) {
-        try {
-            fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
-            return await getMySpotifyAlbums(params);
-        } catch (removeErr) {
-            console.error(removeErr);
-        }
         console.error(err);
+        return {
+            data: {
+                total: 0,
+                items: []
+            }
+        }
     }
 }
 
 const getMySpotifyTracksFromAlbums = async (albumId, params) => {
     try {
-        const accessToken = await getAccessToken();
-        const token = accessToken === null ? await refreshSpotifyToken() : accessToken;
         return await axios.get(`${process.env.SPOTIFY_API_URL}/albums/${albumId}`, {
             headers: {
-                authorization: `Bearer ${token}`
+                authorization: `Bearer ${await getSpotifyAccessToken()}`
             },
             params: params
         });
     } catch (err) {
-        try {
-            if (err.indexOf("open 'tmp/access_token'") > -1) return null;
-            fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
-            return await getMySpotifyTracksFromAlbums(albumId, params);
-        } catch (removeErr) {
-            console.error(removeErr);
-        }
         console.error(err);
+        return {
+            data: {
+                tracks: {
+                    total: 0,
+                    items: []
+                },
+                images: []
+            }
+        }
     }
 }
 
 const searchSpotifyTracks = async (query, limit, offset) => {
     try {
-        const accessToken = await getAccessToken();
-        const token = accessToken === null ? await refreshSpotifyToken() : accessToken;
         return await axios.get(`${process.env.SPOTIFY_API_URL}/search`, {
             headers: {
-                authorization: `Bearer ${token}`
+                authorization: `Bearer ${await getSpotifyAccessToken()}`
             },
             params: {
                 limit: limit,
@@ -170,35 +155,56 @@ const searchSpotifyTracks = async (query, limit, offset) => {
             }
         });
     } catch (err) {
-        if (err.response.status === 401) {
-            fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
-            return await searchSpotifyTracks(query, limit, offset);
-        }
         console.error(err);
-        return null;
+        return {
+            data: {
+                tracks: {
+                    total: 0,
+                    items: []
+                }
+            }
+        };
     }
 }
 
 const getPlaylist = async (id) => {
     try {
-        const accessToken = await getAccessToken();
-        const token = accessToken === null ? await refreshSpotifyToken() : accessToken;
         return await axios.get(`${process.env.SPOTIFY_API_URL}/playlists/${id}`, {
             headers: {
-                authorization: `Bearer ${token}`
+                authorization: `Bearer ${await getSpotifyAccessToken()}`
             },
             params: {
                 fields: 'name,description,tracks.items(track(name,artists(name)))'
             }
         });
     } catch (err) {
-        try {
-            fs.rmSync(`tmp/access_token`, { encoding: 'utf-8' });
-            return await getPlaylist(id);
-        } catch (removeErr) {
-            console.error(removeErr);
-        }
         console.error(err);
+        return null;
+    }
+}
+
+const getYoutubePlaylist = async (spotifyPlaylist) => {
+    try {
+        return await axios.post(`${process.env.YOUTUBE_API_URL}/playlists`,
+            {
+                snippet: {
+                    title: spotifyPlaylist.data.name,
+                    description: spotifyPlaylist.data.description
+                }
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${await getYoutubeAccessToken()}`
+                },
+                params: {
+                    key: process.env.YOUTUBE_API_KEY,
+                    part: 'snippet'
+                }
+            }
+        );
+    } catch (err) {
+        console.error(err);
+        return null;
     }
 }
 
@@ -222,28 +228,9 @@ app.get('/youtube-auth', async (req, res) => {
 
 app.get('/youtube-export/:playlistId', async (req, res) => {
     const spotifyPlaylist = await getPlaylist(req.params.playlistId);
-    let youtubePlaylist;
-    try {
-        youtubePlaylist = await axios.post(`${process.env.YOUTUBE_API_URL}/playlists`,
-            {
-                snippet: {
-                    title: spotifyPlaylist.data.name,
-                    description: spotifyPlaylist.data.description
-                }
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${process.env.YOUTUBE_AUTH_TOKEN}`
-                },
-                params: {
-                    key: process.env.YOUTUBE_API_KEY,
-                    part: 'snippet'
-                }
-            }
-        );
-    } catch (err) {
-        console.err(err);
-    }
+    if (!spotifyPlaylist) return res.redirect(302, `${process.env.REACT_APP_SERVER_URL}/`);
+    const youtubePlaylist = await getYoutubePlaylist(spotifyPlaylist);
+    if (!youtubePlaylist) return res.redirect(302, `${process.env.REACT_APP_SERVER_URL}/`);
     for (var i = 0; i < spotifyPlaylist.data.tracks.items.length; i++) {
         const track = spotifyPlaylist.data.tracks.items[i].track;
         const videos = await axios.get(`${process.env.YOUTUBE_API_URL}/search`, {
@@ -265,7 +252,7 @@ app.get('/youtube-export/:playlistId', async (req, res) => {
             },
             {
                 headers: {
-                    Authorization: `Bearer ${process.env.YOUTUBE_AUTH_TOKEN}`
+                    Authorization: `Bearer ${await getYoutubeAccessToken()}`
                 },
                 params: {
                     key: process.env.YOUTUBE_API_KEY,
@@ -299,7 +286,6 @@ app.get('/my-tracks', async (req, res) => {
 
 app.get('/my-tracks/:pageNumber', async (req, res) => {
     const spotifyTracks = await getMySpotifyTracks({ offset: req.params.pageNumber * 50, limit: 50 });
-    if (!spotifyTracks) return res.status(200).send({ totalPages: 0, tracks: [] });
     const totalPages = Math.ceil(spotifyTracks.data.total / 50);
     const tracks = spotifyTracks.data.items
         .flatMap(item => item.track)
@@ -321,7 +307,6 @@ app.get('/my-tracks/:pageNumber', async (req, res) => {
 
 app.get('/my-playlists/:pageNumber', async (req, res) => {
     const spotifyPlaylists = await getMySpotifyPlaylists({ offset: req.params.pageNumber * 50, limit: 50 });
-    if (!spotifyPlaylists) return res.status(200).send({ totalPages: 0, tracks: [] });
     const totalPages = Math.ceil(spotifyPlaylists.data.total / 50);
     const playlists = spotifyPlaylists.data.items
         .flatMap(item => {
@@ -352,7 +337,6 @@ app.get('/my-playlists/:playlistId/tracks/:trackPageNumber', async (req, res) =>
         req.params.playlistId,
         { offset: req.params.trackPageNumber, limit: 50 }
     );
-    if (!spotifyPlaylistTracks) return res.status(200).send({ totalPages: 0, tracks: [] });
     const totalPages = Math.ceil(spotifyPlaylistTracks.data.total / 50);
     const tracks = spotifyPlaylistTracks.data.items
         .flatMap(item => item.track)
@@ -373,7 +357,6 @@ app.get('/my-playlists/:playlistId/tracks/:trackPageNumber', async (req, res) =>
 
 app.get('/my-albums/:pageNumber', async (req, res) => {
     const spotifyAlbums = await getMySpotifyAlbums({ offset: req.params.pageNumber * 50, limit: 50 });
-    if (!spotifyAlbums) return res.status(200).send({ totalPages: 0, tracks: [] });
     const totalPages = Math.ceil(spotifyAlbums.data.total / 50);
     const albums = spotifyAlbums.data.items
         .flatMap(item => item.album)
@@ -397,9 +380,9 @@ app.get('/my-albums/:albumId/tracks', async (req, res) => {
         req.params.albumId,
         { limit: 50 }
     );
-    if (!spotifyAlbumTracks) return res.status(200).send({ totalPages: 0, tracks: [] });
     const totalPages = Math.ceil(spotifyAlbumTracks.data.tracks.total / 50);
-    const image = spotifyAlbumTracks.data.images.filter(img => img.height === 640)[0].url;
+    const largestImages = spotifyAlbumTracks.data.images.filter(image => image.height === 640);
+    const image = largestImages.length > 0 ? largestImages[0].url : item.images.sort((a, b) => a - b)[0];
     const tracks = spotifyAlbumTracks.data.tracks.items
         .map(track => {
             const artists = track.artists.map(a => a.name);
@@ -420,7 +403,6 @@ app.get('/search/:pageNumber', async (req, res) => {
         50,
         req.params.pageNumber * 50
     );
-    if (!spotifyTracks) return res.status(200).send({ totalPages: 0, tracks: [] });
     const totalPages = Math.ceil(spotifyTracks.data.tracks.total / 50);
     const tracks = spotifyTracks.data.tracks.items
         .map(track => {
